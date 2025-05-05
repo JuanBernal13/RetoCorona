@@ -1,20 +1,19 @@
-// src/components/RecommendedProductsSection.js
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Form, Button, Spinner, Alert } from 'react-bootstrap';
 import Slider from "react-slick";
-import RecommendationProductCard from './RecommendationProductCard'; // B2B Card
-import B2cRecommendationProductCard from './B2cRecommendationProductCard'; // B2C Card
-// No longer need to import b2cRecommendationsMock here
-// import { b2cRecommendationsMock } from '../data/mockData';
+import RecommendationProductCard from './RecommendationProductCard';
+import B2cRecommendationProductCard from './B2cRecommendationProductCard'; // Assuming you create a B2C card
+import './RecommendedProductsSection.css';
+import { b2cRecommendationsMock } from '../data/mockData'; // Import B2C mock data
 
-function RecommendedProductsSection({ userType }) {
+function RecommendedProductsSection({ userType }) { // Receive userType as a prop
   const [productName, setProductName] = useState('');
   const [recommendedProducts, setRecommendedProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [hasSearched, setHasSearched] = useState(false);
 
-  // Reset state when userType changes
+  // Reset state when userType changes (e.g., after logout/new login)
   useEffect(() => {
     setProductName('');
     setRecommendedProducts([]);
@@ -29,38 +28,43 @@ function RecommendedProductsSection({ userType }) {
     setRecommendedProducts([]);
     setHasSearched(true);
 
-    // Determine the endpoint URL based on userType and the new server ports
-    // B2C (person) requests go to port 5001
-    // B2B (company) requests go to port 5000
-    const baseUrl = userType === 'person' ? 'http://127.0.0.1:5001' : 'http://127.0.0.1:5000';
-    const endpoint = '/recommend'; // Both servers use the same endpoint name
+    // In a real application, you might send a different request or include userType
+    // in the request to the backend to get B2C or B2B specific recommendations.
+    // For this example, we'll simulate B2C recommendations using mock data
+    // and use the existing backend call for B2B.
 
-    console.log(`Fetching ${userType === 'person' ? 'B2C' : 'B2B'} recommendations for: ${name} from ${baseUrl}${endpoint}`);
-
-    try {
-      const response = await fetch(`${baseUrl}${endpoint}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        // Send product_name in the request body for both
-        // user_type is determined by the port/endpoint now
-        body: JSON.stringify({ product_name: name }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      // Both backends are expected to return { recommendations: [...] }
-      setRecommendedProducts(data.recommendations);
-    } catch (err) {
-      setError(`Error al obtener recomendaciones: ${err.message}. Asegúrate de que los servicios de Python estén corriendo y el nombre del producto sea válido.`);
-      console.error("Error fetching recommendations:", err);
-    } finally {
+    if (userType === 'person') {
+      // Simulate fetching B2C recommendations (using mock data)
+      // In a real scenario, this would be an API call to a B2C endpoint
+      console.log(`Fetching B2C recommendations for: ${name}`);
+      // Filter mock data if needed, or just use a subset
+      const filteredMock = b2cRecommendationsMock.filter(p => p.nombre.toLowerCase().includes(name.toLowerCase()));
+      setRecommendedProducts(filteredMock);
       setLoading(false);
+    } else { // userType === 'company'
+        console.log(`Fetching B2B recommendations for: ${name}`);
+      try {
+        const response = await fetch('http://127.0.0.1:5000/recommend', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ product_name: name }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        setRecommendedProducts(data);
+      } catch (err) {
+        setError(`Error al obtener recomendaciones: ${err.message}. Asegúrate de que el servicio de Python esté corriendo y el nombre del producto sea válido.`);
+        console.error("Error fetching recommendations:", err);
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -79,11 +83,12 @@ function RecommendedProductsSection({ userType }) {
     }
   };
 
+  // Configuration for the recommendations carousel
   const carouselSettings = {
     dots: true,
     infinite: true,
     speed: 500,
-    slidesToShow: userType === 'person' ? 5 : 4,
+    slidesToShow: userType === 'person' ? 5 : 4, // Show more for B2C if cards are simpler
     slidesToScroll: 1,
     autoplay: true,
     autoplaySpeed: 4000,
@@ -121,7 +126,7 @@ function RecommendedProductsSection({ userType }) {
 
   const recommendationsTitle = userType === 'person'
     ? `Recomendaciones para ti (${productName}):`
-    : `Recomendaciones para "${productName}":`;
+    : `Recomendaciones para "{productName}":`;
 
 
   return (
@@ -166,17 +171,17 @@ function RecommendedProductsSection({ userType }) {
         {!loading && !error && recommendedProducts.length > 0 && (
            <>
              <h3>{recommendationsTitle.replace('{productName}', productName)}</h3>
+             {/* Mostrar recomendaciones en un carrusel */}
              <div className="recommendations-carousel-container">
                  <Slider {...carouselSettings}>
                      {recommendedProducts.map((product, index) => (
                          <div key={index} className="px-2">
-                             {userType === 'person' ? (
-                                 // Pass product details expected by B2C card
-                                 <B2cRecommendationProductCard product={product} />
-                             ) : (
-                                 // Pass product details expected by B2B card
-                                 <RecommendationProductCard product={product} />
-                             )}
+                              {/* Render different card based on user type */}
+                              {userType === 'person' ? (
+                                <B2cRecommendationProductCard product={product} />
+                              ) : (
+                                <RecommendationProductCard product={product} />
+                              )}
                          </div>
                      ))}
                  </Slider>
