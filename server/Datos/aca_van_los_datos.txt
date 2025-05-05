@@ -1,0 +1,2 @@
+En esta carpeta Datos se deben meter los datos txt crudos y 
+se importaran en esta misma carpeta los datos limpios para los modelos.

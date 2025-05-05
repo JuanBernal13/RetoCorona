@@ -9,7 +9,7 @@ app = Flask(__name__)
 CORS(app)
 
 # Nombre del archivo TXT
-DATA_FILE = 'base_3_transaccional_b2b.txt'
+DATA_FILE = 'Datos/base_3_transaccional_b2b.txt'
 
 # --- Variables globales para almacenar datos pre-calculados y el DataFrame ---
 df_transactions = pd.DataFrame()
